@@ -14,52 +14,94 @@ namespace Client
         static void Main(string[] args)
         {
             const string ipAddress = "127.0.0.1";
-            const int port = 8080;
+            const int port = 8082;
+            const int remotePort = 8081;
             int messageId = 0;
+
             try
             {
+                #region TCPClient
+                //while (true)
+                //{
+                //    var endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
+                //    var socketTCP = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                //    Console.WriteLine("Enter your message:");
+                //    messageId++;
+                //    var message = new CMessage() { Message = Console.ReadLine(), Id = messageId };
+
+                //    var data = CustomConverter.Serialize(message);
+
+                //    socketTCP.Connect(endPoint);
+                //    socketTCP.Send(data);
+
+                //    var buffer = new byte[256];
+                //    var size = 0;
+                //    var answer = new StringBuilder();
+
+                //    do
+                //    {
+                //        size = socketTCP.Receive(buffer);
+                //        answer.Append(Encoding.Unicode.GetString(buffer, 0, size));
+
+                //    }
+                //    while (socketTCP.Available > 0);
+
+                //    Console.WriteLine(answer.ToString());
+
+                //    socketTCP.Shutdown(SocketShutdown.Both);
+                //    socketTCP.Close();
+
+                //    if (message.Message == "exit")
+                //        break;
+                //}
+                #endregion
+
+                var endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
+                var socketUDP = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+                socketUDP.Bind(endPoint);
+
                 while (true)
                 {
-                    var endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
-                    var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
                     Console.WriteLine("Enter your message:");
                     messageId++;
                     var message = new CMessage() { Message = Console.ReadLine(), Id = messageId };
 
                     var data = CustomConverter.Serialize(message);
 
-                    socket.Connect(endPoint);
-                    socket.Send(data);
+                    EndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), remotePort);
 
-                    var buffer = new byte[256];
+                    socketUDP.SendTo(data, serverEndPoint);
+
+                    var buffer = new byte[500];
                     var size = 0;
                     var answer = new StringBuilder();
+                    
 
                     do
                     {
-                        size = socket.Receive(buffer);
+                        size = socketUDP.ReceiveFrom(buffer, ref serverEndPoint);
                         answer.Append(Encoding.Unicode.GetString(buffer, 0, size));
 
                     }
-                    while (socket.Available > 0);
+                    while (socketUDP.Available > 0);
 
                     Console.WriteLine(answer.ToString());
 
-                    socket.Shutdown(SocketShutdown.Both);
-                    socket.Close();
-
                     if (message.Message == "exit")
                         break;
+
                 }
-                
+
+                socketUDP.Shutdown(SocketShutdown.Both);
+                socketUDP.Close();
 
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
-            Console.Read();
         }
     }
 }
