@@ -22,29 +22,36 @@ namespace Client_Server_Application
             try
             {
                 currentSocket.Bind(endPoint);
-                currentSocket.Listen(5);
+                currentSocket.Listen(1);
 
                 while (true)
                 {
                     var handler = currentSocket.Accept();
                     var buffer = new byte[256];
                     var size = 0;
-                    var data = new StringBuilder();
+                    var data = new CMessage();
 
                     do
                     {
                         size = handler.Receive(buffer);
-                        data.Append(Encoding.Unicode.GetString(buffer, 0, size));
+                        var obj= CustomConverter.Deserialize(buffer);
+                        if(obj is CMessage)
+                            data = (CMessage)obj;
                         
                     }
                     while (handler.Available > 0);
 
-                    Console.WriteLine(DateTime.Now.ToShortTimeString() + ": " + data.ToString());
+                    //TODO : add saving messages
 
-                    handler.Send(Encoding.Unicode.GetBytes("Your message has been delivered"));
+                    handler.Send(Encoding.Unicode.GetBytes("Your message has been delivered\n"));
 
                     handler.Shutdown(SocketShutdown.Both);
                     handler.Close();
+
+                    if (data.Message == "exit")
+                        break;
+
+                    Console.WriteLine(data.Id + ")" + DateTime.Now.ToShortTimeString() + ": " + data.Message);
                 }
 
             }
