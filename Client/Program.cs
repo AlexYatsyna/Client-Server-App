@@ -17,6 +17,8 @@ namespace Client
             const int port = 8082;
             const int remotePort = 8081;
             int messageId = 0;
+            var endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
+            var socketUDP = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
             try
             {
@@ -57,8 +59,7 @@ namespace Client
                 //}
                 #endregion
 
-                var endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
-                var socketUDP = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                
 
                 socketUDP.Bind(endPoint);
 
@@ -90,17 +91,21 @@ namespace Client
                     Console.WriteLine(answer.ToString());
 
                     if (message.Message == "exit")
-                        break;
+                        return;
 
                 }
 
-                socketUDP.Shutdown(SocketShutdown.Both);
-                socketUDP.Close();
+                
 
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                socketUDP.Shutdown(SocketShutdown.Both);
+                socketUDP.Close();
             }
         }
     }

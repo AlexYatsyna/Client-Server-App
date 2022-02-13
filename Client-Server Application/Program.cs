@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -15,13 +17,13 @@ namespace Client_Server_Application
             const string ipAddress = "127.0.0.1";
             const int port = 8081;
             const int remotePort = 8082;
+            var history = new List<CMessage>();
 
             var endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
 
             //var currentTCPSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             var currentUDPSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             
-
             try
             {
                 #region TCPServer
@@ -73,27 +75,54 @@ namespace Client_Server_Application
                         size = currentUDPSocket.ReceiveFrom(buffer, ref senderEndPoint);
                         var obj = CustomConverter.Deserialize(buffer);
                         if (obj is CMessage)
+                        {
                             data = (CMessage)obj;
+                            data.Time = DateTime.Now;
+                        }
 
                     }
                     while (currentUDPSocket.Available > 0);
 
-                    Console.WriteLine(data.Id + ")" + DateTime.Now.ToShortTimeString() + ": " + data.Message);
+                    Console.WriteLine(data.Id + ")" + data.Time.ToShortTimeString() + ": " + data.Message);
 
-                    currentUDPSocket.SendTo(Encoding.Unicode.GetBytes("Your message has been delivered\n"), senderEndPoint);
 
                     if (data.Message == "exit")
-                        break;
-                    
+                    {
+                        currentUDPSocket.SendTo(Encoding.Unicode.GetBytes("Good bye xD\n"), senderEndPoint);
+                        return;
+                    }
+                    else if (data.Message == "history")
+                    {
+                        history.Add(data);
+
+                        var hist = "";
+                        foreach(var mes in history)
+                        {
+                            hist += $"{mes.Id}) {mes.Message}\n";
+                        }
+                        currentUDPSocket.SendTo(Encoding.Unicode.GetBytes(hist), senderEndPoint);
+
+                    }
+                    else
+                    {
+                        history.Add(data);
+
+                        currentUDPSocket.SendTo(Encoding.Unicode.GetBytes("Your message has been delivered\n"), senderEndPoint);
+                    }
+
                 }
 
-                currentUDPSocket.Shutdown(SocketShutdown.Both);
-                currentUDPSocket.Close();
+                
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 Console.ReadKey();
+            }
+            finally
+            {
+                currentUDPSocket.Shutdown(SocketShutdown.Both);
+                currentUDPSocket.Close();
             }
         }
     }

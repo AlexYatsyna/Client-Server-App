@@ -9,8 +9,15 @@ namespace Client_Server_Application
     [SerializableAttribute]
     public class CMessage
     {
-        public int Id { get; set; } 
+        public int Id { get; set; }
+        public DateTime Time { get; set; }
         public string Message { get; set; }
+
+        public CMessage()
+        {
+            Time = DateTime.Now;
+        }
+
 
 
     }
